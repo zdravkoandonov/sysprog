@@ -4,28 +4,29 @@
 
 int main(int argc, char* argv[]) {
   if (argc > 1) {
-    if (!fork()) {
-      close(1);
-      open("ftemp", O_WRONLY | O_CREAT | O_TRUNC, 0666);
-      execlp("who", "who", (char*)NULL);
-    } else {
-      wait();
-      if (!fork()) {
-        close(1);
-        open("fres", O_WRONLY | O_CREAT | O_TRUNC, 0666);
-        execlp("grep", "grep", argv[1], "ftemp", (char*) NULL);
-      } else {
-        wait();
-        int fd = open("fres", O_RDONLY);
-        char buf[10];
-        if (read(fd, buf, 10) > 0)
-          printf("Yes");
-        else
-          printf("No");
-      }
+    int fdWrite = open(argv[1], O_WRONLY | O_CREAT, 0666);
+    if (fdWrite == -1) {
+      write(2, "Cannot open file", 16);
+      return 1;
     }
+    int fdRead = open(argv[1], O_RDONLY);
+    if (fdRead == -1) {
+      write(2, "Cannot open file", 16);
+      return 1;
+    }
+    lseek(fdWrite, -1, SEEK_END);
+    char c;
+    while (read(fdRead, &c, 1)) {
+      if (c >= '0' && c <= '9')
+        break;
+      write(fdWrite, &c, 1);
+    }
+    char buff[100];
+    int readCount;
+    while (readCount = read(fdRead, buff, 100))
+        write(1, buff, readCount);
   } else {
-    printf("No username provided");
+    printf("No file name provided");
   }
 
   return 0;
