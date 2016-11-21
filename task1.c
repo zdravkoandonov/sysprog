@@ -4,26 +4,28 @@
 
 int main(int argc, char* argv[]) {
   if (argc > 1) {
-    int fdWrite = open(argv[1], O_WRONLY | O_CREAT, 0666);
+    int stdoutCopy = dup(1);
+    close(1);
+    int fdWrite = open(argv[1], O_WRONLY | O_CREAT | O_APPEND, 0666);
     if (fdWrite == -1) {
       write(2, "Cannot open file", 16);
       return 1;
     }
+    close(0);
     int fdRead = open(argv[1], O_RDONLY);
     if (fdRead == -1) {
       write(2, "Cannot open file", 16);
       return 1;
     }
-    lseek(fdWrite, -1, SEEK_END);
     char c;
-    while (read(fdRead, &c, 1)) {
-      if (c >= '0' && c <= '9')
-        break;
-      write(fdWrite, &c, 1);
+    while (read(0, &c, 1) && !(c >= '0' && c <= '9')) {
+      write(1, &c, 1);
     }
     char buff[100];
     int readCount;
-    while (readCount = read(fdRead, buff, 100))
+    close(1);
+    dup(stdoutCopy);
+    while (readCount = read(0, buff, 100))
         write(1, buff, readCount);
   } else {
     printf("No file name provided");
